@@ -15,33 +15,50 @@
  */
 package com.zaubersoftware.gnip4j.api.model;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
-
 /**
  * <p>Java class for anonymous complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
  */
-public final class Hashtags implements Serializable {
-    private List<Integer> indices;
-    private String text;
-
-    public List<Integer> getIndices() {
-        if (indices == null) {
-            indices = new ArrayList<Integer>();
-        }
-        return this.indices;
+public final class Sizes {
+    
+    private Size large;
+    private Size medium;
+    private Size small;
+    private Size thumb;
+    
+    public Size getLarge() {
+        return large;
+    }
+    
+    public Size getMedium() {
+        return medium;
     }
 
-    public String getText() {
-        return text;
+    public Size getSmall() {
+        return small;
+    }
+    
+    public Size getThumb() {
+        return thumb;
     }
 
-    public void setText(final String value) {
-        this.text = value;
+    public void setLarge(Size large) {
+        this.large = large;
     }
+
+    public void setMedium(Size medium) {
+        this.medium = medium;
+    }
+
+    public void setSmall(Size small) {
+        this.small = small;
+    }
+
+    public void setThumb(Size thumb) {
+        this.thumb = thumb;
+    }
+
+
 
 }

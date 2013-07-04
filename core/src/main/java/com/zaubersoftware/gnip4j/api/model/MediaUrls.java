@@ -15,43 +15,61 @@
  */
 package com.zaubersoftware.gnip4j.api.model;
 
-import java.io.Serializable;
-
-
+import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * <p>Java class for anonymous complex type.
- *
+ * 
  * <p>The following schema fragment specifies the expected content contained within this class.
- *
  */
-public final class Links implements Serializable {
+public class MediaUrls extends Urls {
     private static final long serialVersionUID = 1L;
-    private String href;
-    private String rel;
-    private String type;
+    
+    @JsonProperty(value = "id_str")
+    private String id;
+    @JsonProperty(value = "media_url")
+    private String mediaUrl;
+    @JsonProperty("media_url_https")
+    private String mediaUrlHttps;
+    private String type;    
+    private Sizes sizes;
 
-    public String getHref() {
-        return href;
+    public String getId() {
+        return id;
+    }
+    
+    public String getMediaURL() {
+        return mediaUrl;
+    }
+    
+    public void setMediaURL(final String mediaUrl) {
+        this.mediaUrl = mediaUrl;
     }
 
-    public void setHref(final String value) {
-        href = value;
+    public String getMediaURLHttps() {
+        return mediaUrlHttps;
     }
-
-    public String getRel() {
-        return rel;
-    }
-
-    public void setRel(final String value) {
-        rel = value;
+    
+    public void setMediaURLHttps(final String mediaUrlHttps) {
+        this.mediaUrlHttps = mediaUrlHttps;
     }
 
     public String getType() {
         return type;
     }
-
-    public void setType(final String type) {
+    
+    public void setType(String type) {
         this.type = type;
     }
+
+    public Sizes getSizes() {
+        return sizes;        
+    }
+
+    public void setSizes(Sizes sizes) {
+        this.sizes = sizes;
+    }
+
+    
+
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
@@ -31,10 +32,12 @@ import com.zaubersoftware.gnip4j.api.RemoteResourceProvider;
 import com.zaubersoftware.gnip4j.api.StreamNotification;
 import com.zaubersoftware.gnip4j.api.UriStrategy;
 import com.zaubersoftware.gnip4j.api.exception.GnipException;
+import com.zaubersoftware.gnip4j.api.impl.formats.JsonActivityFeedProcessor;
 import com.zaubersoftware.gnip4j.api.model.Rule;
 import com.zaubersoftware.gnip4j.api.model.Rules;
 import com.zaubersoftware.gnip4j.api.stats.StreamStats;
 import com.zaubersoftware.gnip4j.api.support.jmx.JMXProvider;
+
 /**
  * Http implementation for the {@link GnipFacade}
  *
@@ -88,6 +91,11 @@ public class DefaultGnipFacade implements GnipFacade {
             public void await() throws InterruptedException {
                 target.await();
             }
+            
+            @Override
+            public boolean await(final long time, final TimeUnit unit) throws InterruptedException {
+                return target.await(time, unit);
+            }
 
             @Override
             public final String getStreamName() {
@@ -129,6 +137,11 @@ public class DefaultGnipFacade implements GnipFacade {
                 }
 
                 @Override
+                public boolean await(final long time, final TimeUnit unit) throws InterruptedException {
+                    return stream.await(time, unit);
+                }
+                
+                @Override
                 public StreamStats getStreamStats() {
                     return stream.getStreamStats();
                 }
@@ -156,7 +169,7 @@ public class DefaultGnipFacade implements GnipFacade {
         try {
             final InputStream gnipRestResponseStream = facade.getResource(baseUriStrategy
                     .createRulesUri(account, streamName));
-            final JsonParser parser =  DefaultGnipStream.getObjectMapper()
+            final JsonParser parser =  JsonActivityFeedProcessor.getObjectMapper()
                     .getJsonFactory().createJsonParser(gnipRestResponseStream);
             final Rules rules = parser.readValueAs(Rules.class);
             gnipRestResponseStream.close();
@@ -213,17 +226,8 @@ public class DefaultGnipFacade implements GnipFacade {
         this.useJMX = useJMX;
     }
 
-    /**
-     * Creates a new {@link DefaultGnipStream}
-     *
-     * @param domain
-     * @param dataCollectorId
-     * @param executor
-     * @return
-     */
-    private DefaultGnipStream createStream(
-            final String account,
-            final String streamName,
+    /** Creates a new {@link DefaultGnipStream} */
+    private DefaultGnipStream createStream(final String account, final String streamName,
             final ExecutorService executor) {
             return new DefaultGnipStream(facade, account, streamName, executor, baseUriStrategy);
     }

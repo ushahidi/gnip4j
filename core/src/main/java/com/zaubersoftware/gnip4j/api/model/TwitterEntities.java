@@ -15,6 +15,7 @@
  */
 package com.zaubersoftware.gnip4j.api.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,12 +30,14 @@ import org.codehaus.jackson.annotate.JsonProperty;
  *
  */
 @JsonAutoDetect
-public final class TwitterEntities{
-    
+public final class TwitterEntities implements Serializable {
+    private static final long serialVersionUID = 1L;
     private List<Urls> urls;
     @JsonProperty(value = "user_mentions")
     private List<UserMentions> userMentions;
     private List<Hashtags> hashtags;
+    @JsonProperty(value = "media") 
+    private List<MediaUrls> mediaUrls;
 
     /**
      * Gets the value of the urls property.
@@ -121,6 +124,35 @@ public final class TwitterEntities{
             hashtags = new ArrayList<Hashtags>();
         }
         return hashtags;
+    }
+    
+    /**
+     * Gets the value of the media property.
+     *
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the media property.
+     *
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getUrls().add(newItem);
+     * </pre>
+     *
+     *
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link MediaUrls }
+     *
+     *
+     */
+    public List<MediaUrls> getMediaUrls() {
+        if (mediaUrls == null) {
+            mediaUrls = new ArrayList<MediaUrls>();
+        }
+        return mediaUrls;
     }
 
 }

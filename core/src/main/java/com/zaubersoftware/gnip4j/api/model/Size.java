@@ -15,33 +15,44 @@
  */
 package com.zaubersoftware.gnip4j.api.model;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
+import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * <p>Java class for anonymous complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
  */
-public final class Hashtags implements Serializable {
-    private List<Integer> indices;
-    private String text;
-
-    public List<Integer> getIndices() {
-        if (indices == null) {
-            indices = new ArrayList<Integer>();
-        }
-        return this.indices;
+public class Size {
+    
+    @JsonProperty(value = "w")
+    private int width;
+    @JsonProperty(value = "h")
+    private int height;
+    private String resize;
+    
+    public int getWidth() {
+        return width;
+    }
+    
+    public int getHeight() {
+        return height;
+    }
+    
+    public String getResize() {
+        return resize;
     }
 
-    public String getText() {
-        return text;
+    public void setWidth(int width) {
+        this.width = width;
     }
 
-    public void setText(final String value) {
-        this.text = value;
+    public void setHeight(int height) {
+        this.height = height;
     }
 
+    public void setResize(String resize) {
+        this.resize = resize;
+    }
+    
+    
 }

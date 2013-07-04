@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 package com.zaubersoftware.gnip4j.api.impl;
-import static com.zaubersoftware.gnip4j.api.impl.ErrorCodes.*;
+import static com.zaubersoftware.gnip4j.api.impl.ErrorCodes.ERROR_EMPTY_ACCOUNT;
+import static com.zaubersoftware.gnip4j.api.impl.ErrorCodes.ERROR_EMPTY_STREAM_NAME;
+import static com.zaubersoftware.gnip4j.api.impl.ErrorCodes.ERROR_NULL_ACTIVITY_SERVICE;
+import static com.zaubersoftware.gnip4j.api.impl.ErrorCodes.ERROR_NULL_BASE_URI_STRATEGY;
+import static com.zaubersoftware.gnip4j.api.impl.ErrorCodes.ERROR_NULL_HTTPCLIENT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,12 +27,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.module.SimpleModule;
-
 import com.zaubersoftware.gnip4j.api.GnipStream;
 import com.zaubersoftware.gnip4j.api.RemoteResourceProvider;
 import com.zaubersoftware.gnip4j.api.StreamNotification;
@@ -36,9 +34,10 @@ import com.zaubersoftware.gnip4j.api.StreamNotificationAdapter;
 import com.zaubersoftware.gnip4j.api.UriStrategy;
 import com.zaubersoftware.gnip4j.api.exception.GnipException;
 import com.zaubersoftware.gnip4j.api.exception.TransportGnipException;
+import com.zaubersoftware.gnip4j.api.impl.formats.FeedProcessor;
+import com.zaubersoftware.gnip4j.api.impl.formats.JsonActivityFeedProcessor;
+import com.zaubersoftware.gnip4j.api.impl.formats.XMLActivityStreamFeedProcessor;
 import com.zaubersoftware.gnip4j.api.model.Activity;
-import com.zaubersoftware.gnip4j.api.model.Geo;
-import com.zaubersoftware.gnip4j.api.model.GeoDeserializer;
 import com.zaubersoftware.gnip4j.api.stats.DefaultStreamStats;
 import com.zaubersoftware.gnip4j.api.stats.ModifiableStreamStats;
 import com.zaubersoftware.gnip4j.api.stats.StreamStats;
@@ -65,18 +64,6 @@ import com.zaubersoftware.gnip4j.api.support.logging.spi.Logger;
  * @since Apr 29, 2011
  */
 public class DefaultGnipStream extends AbstractGnipStream {
-
-    public static final ObjectMapper getObjectMapper() {
-        final ObjectMapper mapper = new ObjectMapper();
-        
-        SimpleModule gnipActivityModule = new SimpleModule("gnip.activity", new Version(1, 0, 0, null));
-        gnipActivityModule.addDeserializer(Geo.class, new GeoDeserializer(Geo.class));
-        mapper.registerModule(gnipActivityModule);
-        
-        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return mapper;
-    }
-
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /** stream name for debugging propourse */
@@ -143,7 +130,14 @@ public class DefaultGnipStream extends AbstractGnipStream {
             throw new IllegalStateException("The stream is open");
         }
 
-        this.httpConsumer = new GnipHttpConsumer(getStreamInputStream());
+        final FeedProcessor processor;
+        if(streamURI.getPath().endsWith("xml")) {
+            processor = new XMLActivityStreamFeedProcessor(streamName, activityService, notification, this);
+        } else {
+            processor = new JsonActivityFeedProcessor(streamName, activityService, notification, this);
+        }
+        
+        this.httpConsumer = new GnipHttpConsumer(getStreamInputStream(), processor);
         this.httpThread = new Thread(httpConsumer, streamName + "-consumer-http");
         httpThread.start();
     }
@@ -214,17 +208,18 @@ public class DefaultGnipStream extends AbstractGnipStream {
         private long reConnectionWaitTime = INITIAL_RE_CONNECTION_WAIT_TIME;
 
         private InputStream is;
-
-        /**
-         * Creates the GnipHttpConsumer.
-         *
-         * @param response
-         */
-        public GnipHttpConsumer(final InputStream response) {
+        private FeedProcessor processor;
+        
+        /** Creates the GnipHttpConsumer. */
+        public GnipHttpConsumer(final InputStream response, final FeedProcessor proccesor) {
             if(response == null) {
                 throw new IllegalArgumentException("response is null");
             }
+            if(proccesor == null) {
+                throw new IllegalArgumentException("processor is null");
+            }
             this.is = response;
+            this.processor = proccesor;
         }
 
 
@@ -237,28 +232,7 @@ public class DefaultGnipStream extends AbstractGnipStream {
                             reconnect();
                         }
                         if(is != null) {
-                            final JsonParser parser =  getObjectMapper().getJsonFactory().createJsonParser(is);
-
-                            logger.debug("Starting to consume activity stream {} ...", streamName);
-                            while(!Thread.interrupted()) {
-                                final Activity activity = parser.readValueAs(Activity.class);
-                                if (activity == null) {
-                                    logger.warn("Activity parsed from stream {} is null. Should not happen!",
-                                            streamName);
-                                    continue;
-                                }
-                                if (activity.getBody() == null) {
-                                    logger.warn("{}: Activity with id {} and link {} has a null body",
-                                            new Object[]{streamName, activity.getId(), activity.getLink()});
-                                }
-                                logger.trace("{}: Notifying activity {}", streamName, activity.getBody());
-                                activityService.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        notification.notify(activity, DefaultGnipStream.this);
-                                    }
-                                });
-                            }
+                            processor.process(is);
                             logger.debug("{}: The activity stream is no longer being consumed.", streamName);
                         }
                     } catch(final IOException e) {
